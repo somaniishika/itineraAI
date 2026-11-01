@@ -1,0 +1,15 @@
+export const FaqServiceMessages = {
+  CREATE_SUCCESS:'FAQ created successfully',
+  FETCH_SUCCESS: 'FAQs retrieved successfully',
+  DELETE_SUCCESS: 'FAQ deleted successfully',
+  FAQ_NOT_FOUND: (id: number) => `FAQ with ID ${id} not found`,
+  NO_FAQS_FOUND: 'No FAQs available at the moment',
+  DUPLICATE_QUESTION: 'A FAQ with this question already exists',
+  INTERNAL_CREATE_FAIL: 'Failed to create FAQ',
+  INTERNAL_UPDATE_FAIL:'Failed to update FAQ',
+  QUESTION_MIN_LENGTH_MESSAGE :'Question must be at least 10 characters long',
+  JSON_PROPERTY_NAME_ERROR :'Expected double-quoted property name in JSON at position 51 (line 4 column 1)',
+  ANS_MIN_LENGTH_MESSAGE: 'Answer must be at least 10 characters long',
+  ACCESS_DENIED_MESSAGE :'USER: You do not have access to this resource.',
+  UNEXPECTED_ERROR: 'An unexpected error occurred.',
+};

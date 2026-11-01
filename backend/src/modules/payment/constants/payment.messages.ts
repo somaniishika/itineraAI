@@ -1,0 +1,17 @@
+export const PaymentServiceMessages = {
+  PAYMENTS_RETRIEVED_SUCCESS: 'Payments retrieved successfully',
+  PAYMENT_NOT_FOUND: 'Payment not found',
+  INVALID_PAYMENT_STATUS: 'Invalid payment status',
+  UNAUTHORIZED_ACCESS: 'Error:Unauthorised',
+  FORBIDDEN: 'Error: Forbidden',
+  FORBIDDEN_DETAILS: 'USER: You do not have access to this resource.',
+  INTERNAL_SERVER_ERROR: 'Internal server error.',
+  NO_ACTIVE_PRICING: 'No active feature prices found in the system.',
+  PRICING_NOT_CONFIGURED: (feature: string) => `Pricing not configured for feature: ${feature}`,
+  FAILED_TO_CREATE_ORDER: 'Failed to create feature order',
+  FAILED_TO_CREATE_PAYMENT: 'Failed to create payment',
+  INVALID_SIGNATURE: 'Invalid Razorpay signature',
+  ORDER_NOT_FOUND: 'Order not found',
+  PAYMENT_PROCESSING_FAILED: 'Failed to process payment result',
+  UNEXPECTED_ERROR: 'An unexpected error occurred.',
+} as const;
