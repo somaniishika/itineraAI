@@ -7,18 +7,19 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
+    "rootDir": "./src",
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "baseUrl": "./",
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["./src/*"]
     }
   }
 }

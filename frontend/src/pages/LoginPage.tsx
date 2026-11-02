@@ -40,13 +40,16 @@ export function LoginPage() {
       const token = response.data.data?.accessToken;
       const user = response.data.data?.user;
 
-      if (token) {
-        localStorage.setItem('itineraai_token', token);
+      if (!token || !user?.role) {
+        localStorage.removeItem('itineraai_token');
+        localStorage.removeItem('itineraai_user');
+        setError('The login response was incomplete. Please try again.');
+        setSuccessMessage(null);
+        return;
       }
 
-      if (user) {
-        localStorage.setItem('itineraai_user', JSON.stringify(user));
-      }
+      localStorage.setItem('itineraai_token', token);
+      localStorage.setItem('itineraai_user', JSON.stringify(user));
 
       setSuccessMessage('Login successful. Your session is ready.');
       setError('');

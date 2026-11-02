@@ -22,10 +22,15 @@ export class GeminiProvider {
         response: result,
       };
     } catch (error) {
-      this.logger.error(`Gemini API call failed: ${error.message}`);
+      const statusCode = axios.isAxiosError(error) ? error.response?.status || 500 : 500;
+      const response = axios.isAxiosError(error)
+        ? error.response?.data || error.message
+        : error instanceof Error ? error.message : 'Unknown error';
+
+      this.logger.error(`Gemini API call failed with status ${statusCode}`);
       return {
-        statusCode: error.response?.status || 500,
-        response: error.response?.data || error.message,
+        statusCode,
+        response,
       };
     }
   }

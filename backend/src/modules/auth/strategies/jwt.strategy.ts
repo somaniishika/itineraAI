@@ -15,9 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     try {
-      console.log('JWT Payload:', payload);
       const user = await this.userRepository.findById(payload.sub);
-      console.log('User from DB:', user);
 
       if (!user || user.is_deleted || user.is_suspended) {
         throw new UnauthorizedException('Unauthorized Access');

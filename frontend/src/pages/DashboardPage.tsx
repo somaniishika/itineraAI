@@ -21,6 +21,10 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString();
 }
 
+function requestRequiresSignIn(message: string) {
+  return message.startsWith('The API did not accept your sign-in.');
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -42,11 +46,15 @@ export function DashboardPage() {
       })
       .catch((requestError: Error & { status?: number }) => {
         if (active) {
-          setError(
-            requestError.status === 401
-              ? 'Your session has expired. Please sign in again.'
-              : requestError.message || 'We could not load your itineraries.',
-          );
+          if (requestError.status === 401) {
+            setError('The API did not accept your sign-in. Your session may be expired or invalid. Sign in again to retry.');
+          } else if (requestError.status === 403) {
+            setError('Your account does not have permission to access itineraries.');
+          } else if (!requestError.status) {
+            setError('We could not reach the API. Check that the backend is running and try again.');
+          } else {
+            setError(requestError.message || 'We could not load your itineraries.');
+          }
         }
       })
       .finally(() => {
@@ -105,8 +113,7 @@ export function DashboardPage() {
           {!loading && error ? (
             <div className="state-panel error-panel" role="alert">
               <p>{error}</p>
-              {error.includes('session has expired') ? <button className="secondary-button compact-button" onClick={logout}>Sign in again</button> : null}
-              {!error.includes('session has expired') ? <button className="secondary-button compact-button" onClick={() => setRefreshVersion((current) => current + 1)}>Try again</button> : null}
+              {requestRequiresSignIn(error) ? <button className="secondary-button compact-button" onClick={logout}>Sign in again</button> : <button className="secondary-button compact-button" onClick={() => setRefreshVersion((current) => current + 1)}>Try again</button>}
             </div>
           ) : null}
           {!loading && !error && itineraries.length === 0 ? (

@@ -52,7 +52,6 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { emailOrUsername, password } = loginDto;
 
-    console.log('Login attempt with:', { emailOrUsername, password });
     const user = await this.userRepository.findByEmailOrUsername(
       emailOrUsername,
       emailOrUsername,
