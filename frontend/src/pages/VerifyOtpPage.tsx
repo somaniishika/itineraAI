@@ -56,6 +56,19 @@ export function VerifyOtpPage() {
     setVerifying(true);
 
     try {
+      const developmentOtpBypass =
+        import.meta.env.DEV && import.meta.env.VITE_DEV_OTP_BYPASS === 'true';
+
+      if (developmentOtpBypass && purpose === 'VERIFY_EMAIL') {
+        navigate('/login', {
+          state: {
+            successMessage:
+              'Development-only OTP bypass completed. Your backend account is still unverified, so password login remains unavailable until real verification succeeds.',
+          },
+        });
+        return;
+      }
+
       await authApi.verifyOtp({
         email: email.trim().toLowerCase(),
         otp: otp.trim(),

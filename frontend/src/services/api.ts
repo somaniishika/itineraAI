@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { LoginRequest, LoginResponse, OtpRequest, SignupRequest, VerifyOtpRequest } from '../types/auth';
+import type { CreateItineraryRequest, ItineraryListResponse, ItineraryQuestion, ItineraryRecord } from '../types/itinerary';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
@@ -19,7 +20,9 @@ api.interceptors.response.use(
       error.message ||
       'Something went wrong. Please try again.';
 
-    return Promise.reject(new Error(message));
+    const requestError = new Error(message) as Error & { status?: number };
+    requestError.status = error.response?.status;
+    return Promise.reject(requestError);
   },
 );
 
@@ -41,4 +44,12 @@ export const authApi = {
   googleLogin: () => {
     window.location.href = `${baseURL}/auth/google`;
   },
+};
+
+export const itineraryApi = {
+  list: (page = 1, limit = 10) =>
+    api.get<ItineraryListResponse>('/itinerary/list', { params: { page, limit } }),
+  questions: () => api.get<ItineraryQuestion[]>('/itinerary/questions'),
+  create: (payload: CreateItineraryRequest) => api.post<Record<string, unknown>>('/itinerary', payload),
+  detail: (id: number) => api.get<ItineraryRecord>(`/itinerary/${id}`),
 };

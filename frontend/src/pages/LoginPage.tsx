@@ -50,6 +50,7 @@ export function LoginPage() {
 
       setSuccessMessage('Login successful. Your session is ready.');
       setError('');
+      navigate('/dashboard', { replace: true });
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : 'Login failed. Please try again.';
 
