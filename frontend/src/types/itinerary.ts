@@ -33,6 +33,27 @@ export type CreateItineraryRequest = {
   source_questions_answers: Record<string, string | string[]>;
 };
 
+export type FeatureCreditsResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    user_id: number;
+    feature_balances: Record<string, number>;
+  };
+};
+
+export type FeaturePrice = {
+  featureType: string;
+  priceAmount: number;
+  currency: string;
+};
+
+export type FeaturePriceResponse = {
+  success: boolean;
+  message: string;
+  data: FeaturePrice;
+};
+
 export type ItineraryActivity = {
   time?: string;
   title?: string;

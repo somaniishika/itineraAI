@@ -49,6 +49,9 @@ export class User {
   @Index()
   is_deleted: boolean;
 
+  @Column({ default: false })
+  free_itinerary_credits_granted: boolean;
+
   @Column({ nullable: true })
   @Index()
   deleted_at: Date;

@@ -5,7 +5,7 @@ import { AiResponse } from '../interfaces/ai-response.interface';
 @Injectable()
 export class GeminiProvider {
   private readonly API_KEY = process.env.GEMINI_API_KEY;
-  private readonly BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.API_KEY}`;
+  private readonly BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${this.API_KEY}`;
   private readonly logger = new Logger(GeminiProvider.name);
 
   async generateResponse(prompt: string): Promise<AiResponse> {

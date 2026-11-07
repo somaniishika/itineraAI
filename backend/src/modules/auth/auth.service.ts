@@ -46,6 +46,11 @@ export class AuthService {
 
     const user = await this.userRepository.create(userData);
 
+    await this.featureManagementService.grantInitialItineraryCredits(
+      user.id,
+      OtpServiceMessages.FREE_ITINERARY_CREDITS,
+    );
+
     await this.otpService.sendOtp(user.id, 'VERIFY_EMAIL', user.email, user.full_name);
   }
 
@@ -162,10 +167,15 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     if (isFirstTime) {
-      await this.featureManagementService.creditMultipleFeaturesToUser(user.id, {
-        ITINERARY: OtpServiceMessages.FREE_ITINERARY_CREDITS,
-        EMERGENCY_CONTACT: OtpServiceMessages.FREE_EMERGENCY_CREDITS,
-      });
+      await this.featureManagementService.grantInitialItineraryCredits(
+        user.id,
+        OtpServiceMessages.FREE_ITINERARY_CREDITS,
+      );
+      await this.featureManagementService.creditFeatureToUser(
+        user.id,
+        'EMERGENCY_CONTACT',
+        OtpServiceMessages.FREE_EMERGENCY_CREDITS,
+      );
 
       this.logger.log(`User ${email} credited with free feature credits on first login.`);
 

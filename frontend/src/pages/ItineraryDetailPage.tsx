@@ -29,7 +29,17 @@ export function ItineraryDetailPage() {
       .then(({ data }) => { if (active) setItinerary(data); })
       .catch((requestError: Error & { status?: number }) => {
         if (!active) return;
-        setError(requestError.status === 401 ? 'Please sign in again to view this itinerary.' : requestError.message || 'We could not load this itinerary.');
+        if (requestError.status === 401) {
+          setError('The API did not accept your sign-in. Please sign in again to view this itinerary.');
+        } else if (requestError.status === 403) {
+          setError('You do not have permission to view this itinerary.');
+        } else if (requestError.status === 404) {
+          setError('This itinerary could not be found. It may have been removed.');
+        } else if (!requestError.status) {
+          setError('We could not reach the API. Check that the backend is running and try again.');
+        } else {
+          setError(requestError.message || 'We could not load this itinerary.');
+        }
       })
       .finally(() => { if (active) setLoading(false); });
 

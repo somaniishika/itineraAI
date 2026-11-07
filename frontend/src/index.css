@@ -332,6 +332,14 @@ input:focus {
 .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; }
 .welcome-row .muted, .form-page-heading .muted { margin-bottom: 0; }
 .create-button { flex: 0 0 auto; margin: 0; text-decoration: none; }
+.credit-summary { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-top: 30px; padding: 20px 24px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
+.credit-summary .eyebrow { margin-bottom: 5px; }
+.credit-value { margin: 0; color: var(--primary); font-size: 1.35rem; font-weight: 800; }
+.credit-value span { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.credit-note { margin: 6px 0 0; color: var(--muted); font-size: 0.9rem; }
+.credit-error p { margin: 0 0 6px; color: var(--error); }
+.text-button { padding: 0; color: var(--primary); background: transparent; border: 0; text-decoration: underline; font-weight: 700; }
+.credit-pricing { min-width: 180px; }
 .itinerary-section { margin-top: 56px; }
 .section-heading { align-items: center; margin-bottom: 20px; }
 .section-heading h2 { margin: 0; color: var(--primary); font-size: 1.5rem; }
@@ -404,6 +412,8 @@ input:focus {
   .app-nav { gap: 12px; }
   .dashboard-content, .form-page-content, .detail-content { width: min(100% - 32px, 1080px); padding-top: 34px; }
   .welcome-row, .section-heading { align-items: flex-start; flex-direction: column; }
+  .credit-summary { flex-direction: column; }
+  .credit-pricing { min-width: 0; }
   .welcome-row h1, .form-page-heading h1, .itinerary-hero h1 { font-size: 2rem; }
   .create-button { width: 100%; text-align: center; }
   .itinerary-section { margin-top: 40px; }

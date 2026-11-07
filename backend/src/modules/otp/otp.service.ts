@@ -166,8 +166,12 @@ export class OtpService {
       case 'VERIFY_EMAIL':
         user.email_verified = true;
         await this.userRepository.save(user);
-        await this.featureManagementService.creditMultipleFeaturesToUser(user.id, {'ITINERARY': OtpServiceMessages.FREE_ITINERARY_CREDITS, 'EMERGENCY_CONTACT': OtpServiceMessages.FREE_EMERGENCY_CREDITS});
-        this.logger.log(`User ${email} verified and credited with 2 itinerary features.`);
+        await this.featureManagementService.creditFeatureToUser(
+          user.id,
+          'EMERGENCY_CONTACT',
+          OtpServiceMessages.FREE_EMERGENCY_CREDITS,
+        );
+        this.logger.log(`User ${email} verified successfully.`);
         break;
 
       case 'PASSWORD_RESET':

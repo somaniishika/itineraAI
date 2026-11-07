@@ -6,6 +6,6 @@ export const OtpServiceMessages = {
   INVALID_OR_EXPIRED_OTP: 'Invalid or expired OTP',
   NEW_PASSWORD_REQUIRED: 'New password is required for password reset',
   UNSUPPORTED_PURPOSE: 'Unsupported OTP purpose',
-  FREE_ITINERARY_CREDITS: 2,
+  FREE_ITINERARY_CREDITS: 3,
   FREE_EMERGENCY_CREDITS: 10,
 };

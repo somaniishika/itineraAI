@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { itineraryApi } from '../services/api';
+import { featureApi, itineraryApi } from '../services/api';
 import type { ItineraryListItem, ItineraryListResponse } from '../types/itinerary';
 import type { UserProfile } from '../types/auth';
 
@@ -32,6 +32,12 @@ export function DashboardPage() {
   const [itineraryResult, setItineraryResult] = useState<ItineraryListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [creditRefreshVersion, setCreditRefreshVersion] = useState(0);
+  const [itineraryCredits, setItineraryCredits] = useState<number | null>(null);
+  const [creditLoading, setCreditLoading] = useState(true);
+  const [creditError, setCreditError] = useState('');
+  const [itineraryPrice, setItineraryPrice] = useState<{ amount: number; currency: string } | null>(null);
+  const [priceError, setPriceError] = useState('');
   const user = readUser();
   const token = localStorage.getItem('itineraai_token');
 
@@ -63,6 +69,37 @@ export function DashboardPage() {
 
     return () => { active = false; };
   }, [page, refreshVersion]);
+
+  useEffect(() => {
+    let active = true;
+    setCreditLoading(true);
+    setCreditError('');
+    setPriceError('');
+
+    featureApi.credits()
+      .then(({ data }) => {
+        if (active) setItineraryCredits(data.data.feature_balances.ITINERARY ?? 0);
+      })
+      .catch((requestError: Error & { status?: number }) => {
+        if (!active) return;
+        setCreditError(requestError.status === 401
+          ? 'Your sign-in was not accepted. Sign in again to check your credits.'
+          : requestError.status === 403
+            ? 'Your account cannot access its credit balance.'
+            : requestError.message || 'We could not load your credit balance.');
+      })
+      .finally(() => { if (active) setCreditLoading(false); });
+
+    featureApi.price('ITINERARY')
+      .then(({ data }) => {
+        if (active) setItineraryPrice({ amount: data.data.priceAmount, currency: data.data.currency });
+      })
+      .catch((requestError: Error) => {
+        if (active) setPriceError(requestError.message || 'Current itinerary pricing is unavailable.');
+      });
+
+    return () => { active = false; };
+  }, [creditRefreshVersion]);
 
   if (!token) return <Navigate to="/login" replace />;
 
@@ -99,6 +136,31 @@ export function DashboardPage() {
           </div>
           <Link className="primary-button create-button" to="/itinerary/new">+ Create new itinerary</Link>
         </div>
+
+        <section className="credit-summary" aria-label="Itinerary credits">
+          <div>
+            <p className="eyebrow">ITINERARY CREDITS</p>
+            {creditLoading ? <p className="credit-value">Checking balance…</p> : null}
+            {!creditLoading && creditError ? (
+              <div className="credit-error" role="alert">
+                <p>{creditError}</p>
+                <button type="button" className="text-button" onClick={() => setCreditRefreshVersion((current) => current + 1)}>Try again</button>
+              </div>
+            ) : null}
+            {!creditLoading && !creditError && itineraryCredits !== null ? (
+              <>
+                <p className="credit-value">{itineraryCredits} <span>available</span></p>
+                {itineraryCredits === 0 ? <p className="credit-note">You are out of itinerary credits. Purchases are not available yet.</p> : null}
+              </>
+            ) : null}
+          </div>
+          <div className="credit-pricing">
+            <p className="eyebrow">PRICE PER CREDIT</p>
+            {itineraryPrice ? <p className="credit-value">{itineraryPrice.currency} {itineraryPrice.amount}</p> : null}
+            {priceError ? <p className="credit-note">{priceError}</p> : null}
+            <p className="credit-note">Payment checkout is not enabled yet.</p>
+          </div>
+        </section>
 
         <section className="itinerary-section" aria-labelledby="my-itineraries-heading">
           <div className="section-heading">

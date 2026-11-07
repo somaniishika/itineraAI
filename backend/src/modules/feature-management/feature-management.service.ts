@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable,InternalServerErrorException,Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserFeatureBalance } from './entities/users-feature-balance.entity';
+import { User } from '../users/entities/users.entity';
 import { FeatureCreditResponseDto } from './dtos/feature-credit-response.dto';
 import { FeaturePriceRepository } from './repositories/feature-price.repository';
 import { FeaturePriceDto } from './dtos/set-feature-price.dto';
@@ -18,7 +19,42 @@ export class FeatureManagementService {
     private readonly userFeatureBalanceRepository: Repository<UserFeatureBalance>,
 
     private readonly featurePriceRepository: FeaturePriceRepository,
+    private readonly dataSource: DataSource,
   ) {}
+
+  async grantInitialItineraryCredits(userId: number, credits: number): Promise<boolean> {
+    return this.dataSource.transaction(async (manager) => {
+      const users = manager.getRepository(User);
+      const user = await users.findOne({
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!user || user.role !== 'USER' || user.free_itinerary_credits_granted) {
+        return false;
+      }
+
+      user.free_itinerary_credits_granted = true;
+      await users.save(user);
+
+      const balances = manager.getRepository(UserFeatureBalance);
+      let balance = await balances.findOne({
+        where: { user_id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!balance) {
+        balance = balances.create({ user_id: userId, feature_balances: {} });
+      }
+
+      const featureBalances = balance.feature_balances ?? {};
+      featureBalances.ITINERARY = (Number(featureBalances.ITINERARY) || 0) + credits;
+      balance.feature_balances = featureBalances;
+      await balances.save(balance);
+
+      return true;
+    });
+  }
 
   async creditFeatureToUser(userId: number, featureType: string, credits: number): Promise<void> {
   let existingBalance = await this.userFeatureBalanceRepository.findOne({
@@ -85,8 +121,8 @@ async getFeatureCredits(userId: number): Promise<FeatureCreditResponseDto> {
 }
 
 async getFeaturePriceByType( featureType?: FeatureType): Promise<
-  | { featureType: string; priceAmount: number}
-  | Array<{ featureType: string; priceAmount: number}>
+  | { featureType: string; priceAmount: number; currency: string }
+  | Array<{ featureType: string; priceAmount: number; currency: string }>
 > {
   if (featureType) {
     const price = await this.featurePriceRepository.findByFeatureType(featureType);
@@ -99,6 +135,7 @@ async getFeaturePriceByType( featureType?: FeatureType): Promise<
     return {
       featureType: price.featureType,
       priceAmount: Number(price.priceAmount),
+      currency: price.currency,
     };
   }
   const prices = await this.featurePriceRepository.findAll();
@@ -106,6 +143,7 @@ async getFeaturePriceByType( featureType?: FeatureType): Promise<
   return prices.map((price) => ({
     featureType: price.featureType,
     priceAmount: Number(price.priceAmount),
+    currency: price.currency,
   }));
 }
 

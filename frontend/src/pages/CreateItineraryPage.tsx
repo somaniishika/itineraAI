@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { itineraryApi } from '../services/api';
+import { featureApi, itineraryApi } from '../services/api';
 import type { CreateItineraryRequest, ItineraryQuestion } from '../types/itinerary';
 
 type AnswerValue = string | string[];
@@ -26,6 +26,11 @@ export function CreateItineraryPage() {
   const [questions, setQuestions] = useState<ItineraryQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [step, setStep] = useState(0);
+  const [questionLoadVersion, setQuestionLoadVersion] = useState(0);
+  const [creditLoadVersion, setCreditLoadVersion] = useState(0);
+  const [itineraryCredits, setItineraryCredits] = useState<number | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(true);
+  const [creditError, setCreditError] = useState('');
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [creationSucceeded, setCreationSucceeded] = useState(false);
@@ -35,6 +40,8 @@ export function CreateItineraryPage() {
 
   useEffect(() => {
     let active = true;
+    setLoadingQuestions(true);
+    setError('');
     itineraryApi.questions()
       .then(({ data }) => {
         if (!active) return;
@@ -47,12 +54,47 @@ export function CreateItineraryPage() {
       })
       .catch((requestError: Error & { status?: number }) => {
         if (!active) return;
-        setError(requestError.status === 401 ? 'Please sign in again to load the trip questionnaire.' : requestError.message);
+        if (requestError.status === 401) {
+          setError('The API did not accept your sign-in. Please sign in again to load the trip questionnaire.');
+        } else if (requestError.status === 403) {
+          setError('Your account does not have permission to load the trip questionnaire.');
+        } else if (!requestError.status) {
+          setError('We could not reach the API. Check that the backend is running and try again.');
+        } else {
+          setError(requestError.message || 'We could not load the trip questionnaire.');
+        }
       })
       .finally(() => { if (active) setLoadingQuestions(false); });
 
     return () => { active = false; };
-  }, []);
+  }, [questionLoadVersion]);
+
+  useEffect(() => {
+    let active = true;
+    setLoadingCredits(true);
+    setCreditError('');
+
+    featureApi.credits()
+      .then(({ data }) => {
+        if (active) setItineraryCredits(data.data.feature_balances.ITINERARY ?? 0);
+      })
+      .catch((requestError: Error & { status?: number }) => {
+        if (!active) return;
+        setItineraryCredits(null);
+        if (requestError.status === 401) {
+          setCreditError('The API did not accept your sign-in. Please sign in again to check your itinerary credits.');
+        } else if (requestError.status === 403) {
+          setCreditError('Your account does not have permission to check itinerary credits.');
+        } else if (!requestError.status) {
+          setCreditError('We could not reach the API to check your itinerary credits. Check that the backend is running and try again.');
+        } else {
+          setCreditError(requestError.message || 'We could not check your itinerary credits.');
+        }
+      })
+      .finally(() => { if (active) setLoadingCredits(false); });
+
+    return () => { active = false; };
+  }, [creditLoadVersion]);
 
   if (!token) return <Navigate to="/login" replace />;
 
@@ -113,8 +155,29 @@ export function CreateItineraryPage() {
     setNotice('');
     submissionStarted.current = true;
     setSubmitting(true);
+
+    let existingItineraryIds: Set<number>;
     try {
-      await itineraryApi.create(payload);
+      const currentItineraries = await itineraryApi.list(1, 100);
+      existingItineraryIds = new Set(currentItineraries.data.data.map((item) => item.itinerary_id));
+    } catch (requestError) {
+      const apiError = requestError as Error & { status?: number };
+      if (apiError.status === 401) {
+        setError('The API did not accept your sign-in. Please sign in again before generating an itinerary.');
+      } else if (apiError.status === 403) {
+        setError('Your account does not have permission to access itineraries.');
+      } else {
+        setError('We could not check your saved itineraries before generation. Please try again.');
+      }
+      submissionStarted.current = false;
+      setSubmitting(false);
+      return;
+    }
+
+    let generatedContent: Record<string, unknown>;
+    try {
+      const response = await itineraryApi.create(payload);
+      generatedContent = response.data;
       setCreationSucceeded(true);
     } catch (requestError) {
       const apiError = requestError as Error & { status?: number };
@@ -131,12 +194,21 @@ export function CreateItineraryPage() {
     }
 
     try {
-      const latestItinerary = await itineraryApi.list(1, 1);
-      const createdId = latestItinerary.data.data[0]?.itinerary_id;
-      if (createdId) {
-        navigate(`/itinerary/${createdId}`, { replace: true });
+      const latestItineraries = await itineraryApi.list(1, 100);
+      const generatedTitle = typeof generatedContent.itinerary_title === 'string'
+        ? generatedContent.itinerary_title
+        : null;
+      const createdItinerary = latestItineraries.data.data.find((item) =>
+        !existingItineraryIds.has(item.itinerary_id) &&
+        item.travel_location === payload.travel_location &&
+        item.country === payload.country &&
+        (!generatedTitle || item.title === generatedTitle),
+      );
+
+      if (createdItinerary) {
+        navigate(`/itinerary/${createdItinerary.itinerary_id}`, { replace: true });
       } else {
-        setNotice('The generation request succeeded, but the new itinerary could not be found in your list. Open My trips to check again.');
+        setNotice('Generation succeeded, but the new saved trip could not be identified. Open My trips to check your saved itineraries before trying again.');
       }
     } catch {
       setNotice('The itinerary was generated, but its saved record could not be loaded. Open My trips and check before trying again.');
@@ -219,9 +291,35 @@ export function CreateItineraryPage() {
           <p className="muted">Tell us a little about the journey you have in mind.</p>
         </div>
 
-        {loadingQuestions ? <div className="state-panel">Loading your trip questions…</div> : null}
-        {!loadingQuestions && error && questions.length === 0 ? <div className="state-panel error-panel" role="alert">{error}</div> : null}
-        {!loadingQuestions && questions.length > 0 ? (
+        {loadingCredits ? <div className="state-panel">Checking your itinerary credits…</div> : null}
+        {!loadingCredits && creditError ? (
+          <div className="state-panel error-panel" role="alert">
+            <p>{creditError}</p>
+            <button type="button" className="secondary-button compact-button" onClick={() => setCreditLoadVersion((current) => current + 1)}>Check again</button>
+          </div>
+        ) : null}
+        {!loadingCredits && !creditError && itineraryCredits === 0 ? (
+          <div className="state-panel error-panel" role="status">
+            <h2>You do not have itinerary credits</h2>
+            <p>You need at least one itinerary credit before starting a new itinerary. Your existing trips are still available in My trips.</p>
+            <Link className="secondary-button compact-button" to="/dashboard">Return to My trips</Link>
+          </div>
+        ) : null}
+        {!loadingCredits && !creditError && (itineraryCredits ?? 0) > 0 && loadingQuestions ? <div className="state-panel">Loading your trip questions…</div> : null}
+        {!loadingCredits && !creditError && (itineraryCredits ?? 0) > 0 && !loadingQuestions && error && questions.length === 0 ? (
+          <div className="state-panel error-panel" role="alert">
+            <p>{error}</p>
+            <button type="button" className="secondary-button compact-button" onClick={() => setQuestionLoadVersion((current) => current + 1)}>Try again</button>
+          </div>
+        ) : null}
+        {!loadingQuestions && !error && !loadingCredits && !creditError && (itineraryCredits ?? 0) > 0 && questions.length === 0 ? (
+          <div className="state-panel empty-panel">
+            <h2>No itinerary questions are available</h2>
+            <p>Please try again later or contact support if this continues.</p>
+            <button type="button" className="secondary-button compact-button" onClick={() => setQuestionLoadVersion((current) => current + 1)}>Reload questions</button>
+          </div>
+        ) : null}
+        {!loadingQuestions && !loadingCredits && !creditError && (itineraryCredits ?? 0) > 0 && questions.length > 0 ? (
           <form className="questionnaire-panel" onSubmit={handleSubmit}>
             <div className="step-heading">
               <span>Step {step + 1} of {stepCount}</span>
