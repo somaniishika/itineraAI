@@ -11,36 +11,36 @@ export enum FieldTypeQuestions {
 @Entity('questionnaires')
 export class Questionnaire {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column('text')
-  question_text: string;
+  question_text!: string;
 
   @Column({ type: 'enum', enum: FieldTypeQuestions })
-  field_type: FieldTypeQuestions;
+  field_type!: FieldTypeQuestions;
 
   @Column('jsonb', { nullable: true })
-  options: string[];
+  options!: string[];
 
   @Column('text', { nullable: true })
-  example: string;
+  example!: string;
 
   @Column('text', { nullable: true })
-  image_url: string;
+  image_url!: string;
 
   @Column({ default: false })
-  is_default: boolean;
+  is_default!: boolean;
 
   @Column({ nullable: true })
-  created_by: number;
+  created_by!: number;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @ManyToOne(() => User, user => user.questionnaires, { nullable: true,onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by' })
-  creator: User;
+  creator!: User;
 }

@@ -4,28 +4,28 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Entity()
 export class FeaturePrice {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({
     type: 'enum',
     enum: FeatureType,
     unique: true
   })
-  featureType: string;
+  featureType!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  priceAmount: number;
+  priceAmount!: number;
 
   @Column({ length: 5, default: 'INR' })
-  currency: string;
+  currency!: string;
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
 }

@@ -4,22 +4,22 @@ import { User } from '../../users/entities/users.entity';
 @Entity('trip_length_guides')
 export class TripLengthGuide {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
   @Index()
-  user_id: number;
+  user_id!: number;
 
   @Column('varchar')
-  location: string;
+  location!: string;
 
   @Column('jsonb')
-  content: Record<string, string>;
+  content!: Record<string, string>;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @ManyToOne(() => User, user => user.trip_guides)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 }

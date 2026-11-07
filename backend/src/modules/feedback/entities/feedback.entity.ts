@@ -9,29 +9,29 @@ type FeedbackImage = {
 @Entity('feedbacks')
 export class Feedback {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  user_id: number;
+  user_id!: number;
 
   @Column('int')
   @Index() // for rating based filtering
-  rating: number;
+  rating!: number;
 
   @Column('text', { nullable: true })
-  message: string;
+  message!: string;
 
   @Column({ type: 'jsonb', nullable: true })
   images?: FeedbackImage[];
 
   @Column({ default: 5 })
-  monthly_feedback_limit: number;
+  monthly_feedback_limit!: number;
 
   @CreateDateColumn()
   @Index() // filtering/sorting
-  created_at: Date;
+  created_at!: Date;
 
   @ManyToOne(() => User, user => user.feedbacks)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 }

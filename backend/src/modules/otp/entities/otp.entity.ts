@@ -4,28 +4,28 @@ import { User } from '../../users/entities/users.entity';
 @Entity('otps')
 export class Otp {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
   @Index() 
-  user_id: number;
+  user_id!: number;
 
   @Column('varchar')
-  otp_code: string;
+  otp_code!: string;
 
   @Column({
     type: 'enum',
     enum: ['VERIFY_EMAIL', 'PASSWORD_RESET', 'EMAIL_CHANGE']
   })
-  purpose: string;
+  purpose!: string;
 
   @Column({ default: 5 })
-  otp_limit: number;
+  otp_limit!: number;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @ManyToOne(() => User, user => user.otps)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 }

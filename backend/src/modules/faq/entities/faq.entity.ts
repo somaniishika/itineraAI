@@ -3,17 +3,17 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeor
 @Entity('faqs')
 export class Faq {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column('text')
-  question: string;
+  question!: string;
 
   @Column('text')
-  answer: string;
+  answer!: string;
   
   @Column('varchar', { length: 100 })
-  category: string;
+  category!: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 }

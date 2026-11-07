@@ -14,92 +14,92 @@ import { FeatureOrder } from '../../payment/entities/feature-order.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  full_name: string;
+  full_name!: string;
 
   @Column({ unique: true, nullable: true }) 
   @Index()
-  username: string;
+  username!: string;
 
   @Column({ unique: true })
   @Index()
-  email: string;
+  email!: string;
 
   @Column({ nullable: true }) 
-  address: string;
+  address!: string;
 
   @Column({ nullable: true }) 
-  password_hash: string;
+  password_hash!: string;
 
   @Column({ type: 'enum', enum: ['USER', 'ADMIN'], default: 'USER' })
   @Index()
-  role: string;
+  role!: string;
 
   @Column({ default: false })
   @Index()
-  is_suspended: boolean;
+  is_suspended!: boolean;
 
   @Column({ default: false })
   @Index()
-  email_verified: boolean;
+  email_verified!: boolean;
 
   @Column({ default: false })
   @Index()
-  is_deleted: boolean;
+  is_deleted!: boolean;
 
   @Column({ default: false })
-  free_itinerary_credits_granted: boolean;
+  free_itinerary_credits_granted!: boolean;
 
   @Column({ nullable: true })
   @Index()
-  deleted_at: Date;
+  deleted_at!: Date;
 
 
   @Column({ nullable: true })
-  profile_picture: string;
+  profile_picture!: string;
 
   @Column({ type: 'enum', enum: ['local', 'google'], default: 'local' })
   @Index()
-  provider: string;
+  provider!: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @OneToMany(() => UserFeatureBalance, balance => balance.user)
-  feature_balances: UserFeatureBalance[];
+  feature_balances!: UserFeatureBalance[];
 
   @OneToMany(() => Payment, payment => payment.user)
-  payments: Payment[];
+  payments!: Payment[];
 
   @OneToMany(() => Itinerary, itinerary => itinerary.user)
-  itineraries: Itinerary[];
+  itineraries!: Itinerary[];
 
   @OneToMany(() => TripLengthGuide, guide => guide.user)
-  trip_guides: TripLengthGuide[];
+  trip_guides!: TripLengthGuide[];
 
   @OneToMany(() => EmergencyContact, contact => contact.user)
-  emergency_contacts: EmergencyContact[];
+  emergency_contacts!: EmergencyContact[];
 
   @OneToMany(() => Feedback, feedback => feedback.user)
-  feedbacks: Feedback[];
+  feedbacks!: Feedback[];
 
   @OneToMany(() => Otp, otp => otp.user)
-  otps: Otp[];
+  otps!: Otp[];
 
   @OneToOne(() => SuspensionRequest, request => request.user)
-  suspension_request: SuspensionRequest;
+  suspension_request!: SuspensionRequest;
 
   @OneToMany(() => Questionnaire, questionnaire => questionnaire.created_by)
-  questionnaires: Questionnaire[];
+  questionnaires!: Questionnaire[];
 
   @OneToMany(() => ApiAuditLog, log => log.user)
-  audit_logs: ApiAuditLog[];
+  audit_logs!: ApiAuditLog[];
 
   @OneToMany(() => FeatureOrder, order => order.user)
-  feature_orders: FeatureOrder[];
+  feature_orders!: FeatureOrder[];
 }

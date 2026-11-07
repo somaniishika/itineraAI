@@ -4,23 +4,23 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Unique(['publicId'])
 export class Image {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  publicId: string;
+  publicId!: string;
 
   @Column()
   @Index()
-  url: string;
+  url!: string;
 
   @Column()
-  purpose: string; 
+  purpose!: string;
   
   @Column({ default: false })
   @Index()
-  isUsed: boolean;
+  isUsed!: boolean;
 
   @CreateDateColumn()
   @Index()
-  createdAt: Date;
+  createdAt!: Date;
 }
