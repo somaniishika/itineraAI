@@ -122,18 +122,72 @@ This file documents only the backend information that was inspected and verified
 - Important behavior: this route is protected by a Passport Google strategy and uses the backend callback URL configured on the server.
 - Status: unverified in this frontend project because the backend currently holds placeholder Google credentials.
 
-## Protected profile route (verified)
-- GET /users
-- Purpose: fetch the authenticated user profile.
-- Authentication: JWT required via the access-token bearer header.
-- Response includes the current user profile details.
-- This route is available for future profile screens, but it is not required for the initial authentication-only UI.
+## GET /users
+- Purpose: fetch the authenticated user's profile.
+- Authentication: JWT bearer token; controller also restricts access to role `USER`.
+- Response shape: `{ success, message, data }`. Verified profile fields include `id`, `full_name`, `username`, `email`, `address`, `role`, `email_verified`, `is_suspended`, `is_deleted`, `deleted_at`, `created_at`, and `updated_at`. The service excludes `password_hash`.
+- The frontend profile page fetches this endpoint rather than treating cached login data as authoritative.
+
+## PUT /users
+- Purpose: update the authenticated USER's profile fields supported by `UpdateProfileDto`.
+- Authentication: JWT bearer token; role `USER` required.
+- Request body requires all three string fields: `full_name` (3-40 characters), `username` (3-20 characters), and `address` (minimum 3 characters). The service rejects a duplicate username and requests that do not change any supported value.
+- Response shape: `{ success, message, data: { id, full_name, username, address } }`.
+- Email changes are not supported by this endpoint and are read-only in the frontend profile page. Password changes use a separate endpoint and are not part of this profile page.
+
+## Admin APIs
+All routes below require a JWT bearer token and the `ADMIN` role via `JwtAuthGuard` and `RolesGuard`.
+
+### GET /admin/users
+- Purpose: return a paginated user list.
+- Query parameters: `page`, `limit`, optional `name`, `email`, `username`, and `is_active` (`true` filters active/not-suspended users; `false` filters suspended users).
+- Response shape: `{ success, message, data: AdminUser[], meta: { total, page, limit, totalPages } }`. The service removes `password_hash` from list entries.
+
+### GET /admin/users/:id
+- Purpose: return one user's details, feature-credit records, and payment history.
+- Response shape: `{ success, message, data: { user, featureCredits, paymentHistory } }`.
+- The backend payment-history objects include `payment_gateway_response`; the frontend intentionally displays only order, status, amount, and date rather than raw gateway payloads.
+
+### PUT /admin/user-status?status=suspend|reactivate
+- Request body: `{ userId: number, reason: string }`; `reason` must be 5-100 characters for either operation.
+- Response: `{ success: true, message }`.
+- The service does not allow modifying ADMIN accounts. Suspending creates or resets a PENDING suspension request. Reactivating requires an existing suspension request; there is no separate suspension-request approve/reject endpoint.
+
+### GET /admin/questionnaire
+- Purpose: list all questionnaire records.
+- Response: an array of `{ id, question_text, field_type, options, image_url, is_default, created_by, created_at, updated_at }`.
+- Supported entity enum values are `text`, `dropdown`, `multi-select`, and `date`.
+
+### POST /admin/questionnaire
+- Request body: `question_text` (5-500 characters), `field_type`, optional `options: string[]`, and optional `image_url`.
+- Response: one questionnaire record with the fields returned by `GET /admin/questionnaire`.
+- Default questions are created with `is_default: false`. Dropdown questions require options in the current service/DTO validation.
+- Limitation: both create and update DTOs apply `@Length(5,15)` to `field_type`. This rejects the enum values `text` and `date` (four characters), despite those values being defined in the entity enum. The frontend only offers dropdown/multi-select for new records.
+
+### PUT /admin/questionnaire/:id
+- Request body: optional `question_text`, `field_type`, `options`, and `image_url` fields.
+- Response: the updated questionnaire record.
+- The service rejects edits to `is_default` questions. Because of the `field_type` length validator, the frontend omits an unchanged `text`/`date` type when editing those records; changing a type to `text`/`date` is not supported by the current DTO.
+
+### DELETE /admin/questionnaire/:id
+- Response: HTTP 204 with no body.
+- The service rejects deletion of `is_default` questions.
+
+### GET /admin/suspension-requests
+- Query parameters: `page` (default 1), `limit` (default 10), optional `status` (`PENDING` or `APPROVED`).
+- Response shape: `{ success, message, total, page, limit, data: SuspensionRequest[] }`; each item includes `id`, `user_id`, `username`, `email`, `user_request_message`, `suspension_reason`, `status`, and `suspension_date`.
+- A filtered query with no matching requests can return 404. The frontend displays that case as an empty result. This controller has no approve/reject action for a request.
+
+### GET /admin/api-audit-logs
+- Query parameters: `page` and `limit` (positive integers; service defaults to 1 and 10).
+- Response shape: `{ success, message, data: ApiAuditLog[], meta: { total, page, limit, totalPages } }`. Entries include `id`, `user_id`, `status_code`, `feature`, `response_text`, `error_message`, `created_at`, and a nullable summary of the associated user.
+- The frontend exposes logs read-only.
 
 ## Unknown / unverified items
 - Exact Google callback response format is not confirmed because the backend Google credentials are not configured.
 - The dashboard and itinerary flows have not been manually exercised against a running backend/database with a real USER JWT, available credits, and configured Gemini/SendGrid services. The local backend was not listening during the current check, so no HTTP status/body, Authorization header acceptance, or role authorization was observed live.
 - No itinerary edit endpoint was verified; editing is not implemented.
-- Profile, payment/credit purchase, and admin workflows remain outside the completed Phase 2 scope.
+- Profile GET/PUT source contracts have been inspected and the profile page is implemented, but live profile API behavior has not been tested with a real USER session. Admin UI contracts were verified from source but still require manual testing with a real ADMIN session.
 - Free-credit grant behavior is covered by service unit tests, but real registration/OTP/database behavior has not been exercised against a migrated database. New free credits apply only to accounts created after the grant-flag migration; existing balances are intentionally preserved.
 
 ## Backend provider configuration

@@ -1,5 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { UserProfile } from '../types/auth';
+import { AdminLayout } from './AdminLayout';
 
 function readUser(): UserProfile | null {
   try {
@@ -11,31 +12,10 @@ function readUser(): UserProfile | null {
 }
 
 export function AdminDashboardPage() {
-  const navigate = useNavigate();
   const user = readUser();
 
-  const logout = () => {
-    localStorage.removeItem('itineraai_token');
-    localStorage.removeItem('itineraai_user');
-    navigate('/login', { replace: true });
-  };
-
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <Link to="/dashboard" className="brand-block app-brand" aria-label="ItineraAI admin dashboard">
-          <img src="/logo.png" alt="" className="brand-logo" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
-          <span>
-            <span className="brand-name">ItineraAI</span>
-            <span className="brand-subtitle">ADMIN WORKSPACE</span>
-          </span>
-        </Link>
-        <nav className="app-nav" aria-label="Main navigation">
-          <span className="nav-link active">Admin overview</span>
-          <button type="button" className="nav-link" onClick={logout}>Log out</button>
-        </nav>
-      </header>
-
+    <AdminLayout>
       <section className="dashboard-content">
         <div className="welcome-row">
           <div>
@@ -53,25 +33,29 @@ export function AdminDashboardPage() {
             </div>
           </div>
           <div className="itinerary-grid">
-            <article className="trip-card">
+            <Link to="/admin/users" className="trip-card">
               <span className="trip-card-topline">USER ADMINISTRATION</span>
               <h3>User records and status</h3>
-              <p className="trip-destination">Verified APIs: GET /admin/users, GET /admin/users/:id, PUT /admin/user-status</p>
-            </article>
-            <article className="trip-card">
+              <p className="trip-destination">Browse user accounts, view details, and change supported status.</p>
+            </Link>
+            <Link to="/admin/questionnaire" className="trip-card">
               <span className="trip-card-topline">QUESTIONNAIRE</span>
               <h3>Question management</h3>
-              <p className="trip-destination">Verified APIs: GET, POST, PUT, and DELETE /admin/questionnaire</p>
-            </article>
-            <article className="trip-card">
+              <p className="trip-destination">View and manage non-default itinerary questions.</p>
+            </Link>
+            <Link to="/admin/suspension-requests" className="trip-card">
               <span className="trip-card-topline">REVIEW AND AUDIT</span>
-              <h3>Requests and API activity</h3>
-              <p className="trip-destination">Verified APIs: GET /admin/suspension-requests and GET /admin/api-audit-logs</p>
-            </article>
+              <h3>Suspension requests</h3>
+              <p className="trip-destination">Review paginated user requests. The backend has no decision endpoint.</p>
+            </Link>
+            <Link to="/admin/audit-logs" className="trip-card">
+              <span className="trip-card-topline">API ACTIVITY</span>
+              <h3>Audit logs</h3>
+              <p className="trip-destination">Browse paginated API activity and error summaries.</p>
+            </Link>
           </div>
-          <p className="muted admin-note">This is an access landing page. Admin data-management screens are not implemented yet.</p>
         </section>
       </section>
-    </main>
+    </AdminLayout>
   );
 }

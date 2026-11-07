@@ -1,5 +1,6 @@
 import axios from 'axios';
-import type { LoginRequest, LoginResponse, OtpRequest, SignupRequest, VerifyOtpRequest } from '../types/auth';
+import type { LoginRequest, LoginResponse, OtpRequest, ProfileDetails, SignupRequest, UpdateProfileRequest, UpdateProfileResponse, VerifyOtpRequest } from '../types/auth';
+import type { AdminQuestionnaire, AdminQuestionnaireRequest, AdminUserDetailsResponse, AdminUserListResponse, ApiAuditLogResponse, SuspensionRequestListResponse, UpdateAdminUserStatusRequest } from '../types/admin';
 import type { CreateItineraryRequest, FeatureCreditsResponse, FeaturePriceResponse, ItineraryListResponse, ItineraryQuestion, ItineraryRecord } from '../types/itinerary';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -43,6 +44,27 @@ export const authApi = {
   googleLogin: () => {
     window.location.href = `${baseURL}/auth/google`;
   },
+};
+
+export const userApi = {
+  getProfile: () => api.get<{ success: boolean; message: string; data: ProfileDetails }>('/users'),
+  updateProfile: (payload: UpdateProfileRequest) => api.put<UpdateProfileResponse>('/users', payload),
+};
+
+export const adminApi = {
+  users: (params: { page: number; limit: number; name?: string; email?: string; username?: string; is_active?: boolean }) =>
+    api.get<AdminUserListResponse>('/admin/users', { params }),
+  userDetails: (id: number) => api.get<AdminUserDetailsResponse>(`/admin/users/${id}`),
+  updateUserStatus: (status: 'suspend' | 'reactivate', payload: UpdateAdminUserStatusRequest) =>
+    api.put<{ success: boolean; message: string }>('/admin/user-status', payload, { params: { status } }),
+  questionnaire: () => api.get<AdminQuestionnaire[]>('/admin/questionnaire'),
+  createQuestionnaire: (payload: AdminQuestionnaireRequest) => api.post<AdminQuestionnaire>('/admin/questionnaire', payload),
+  updateQuestionnaire: (id: number, payload: Partial<AdminQuestionnaireRequest>) => api.put<AdminQuestionnaire>(`/admin/questionnaire/${id}`, payload),
+  deleteQuestionnaire: (id: number) => api.delete<void>(`/admin/questionnaire/${id}`),
+  suspensionRequests: (params: { page: number; limit: number; status?: 'PENDING' | 'APPROVED' }) =>
+    api.get<SuspensionRequestListResponse>('/admin/suspension-requests', { params }),
+  auditLogs: (params: { page: number; limit: number }) =>
+    api.get<ApiAuditLogResponse>('/admin/api-audit-logs', { params }),
 };
 
 export const itineraryApi = {

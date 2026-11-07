@@ -6,6 +6,11 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CreateItineraryPage } from './pages/CreateItineraryPage';
 import { ItineraryDetailPage } from './pages/ItineraryDetailPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AdminQuestionnairePage } from './pages/AdminQuestionnairePage';
+import { AdminSuspensionRequestsPage } from './pages/AdminSuspensionRequestsPage';
+import { AdminAuditLogsPage } from './pages/AdminAuditLogsPage';
 
 function readUserRole(): string | null {
   try {
@@ -25,9 +30,15 @@ function DashboardRoute() {
   return <Navigate to="/login" replace />;
 }
 
-function UserItineraryRoute({ children }: { children: React.ReactNode }) {
+function UserRoute({ children }: { children: React.ReactNode }) {
   if (!localStorage.getItem('itineraai_token')) return <Navigate to="/login" replace />;
   if (readUserRole() !== 'USER') return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  if (!localStorage.getItem('itineraai_token')) return <Navigate to="/login" replace />;
+  if (readUserRole() !== 'ADMIN') return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -42,8 +53,14 @@ export default function App() {
       <Route path="/verify-email" element={<VerifyOtpPage />} />
       <Route path="/reset-password" element={<VerifyOtpPage />} />
       <Route path="/dashboard" element={<DashboardRoute />} />
-      <Route path="/itinerary/new" element={<UserItineraryRoute><CreateItineraryPage /></UserItineraryRoute>} />
-      <Route path="/itinerary/:id" element={<UserItineraryRoute><ItineraryDetailPage /></UserItineraryRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+      <Route path="/admin/questionnaire" element={<AdminRoute><AdminQuestionnairePage /></AdminRoute>} />
+      <Route path="/admin/suspension-requests" element={<AdminRoute><AdminSuspensionRequestsPage /></AdminRoute>} />
+      <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogsPage /></AdminRoute>} />
+      <Route path="/profile" element={<UserRoute><ProfilePage /></UserRoute>} />
+      <Route path="/itinerary/new" element={<UserRoute><CreateItineraryPage /></UserRoute>} />
+      <Route path="/itinerary/:id" element={<UserRoute><ItineraryDetailPage /></UserRoute>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

@@ -21,9 +21,11 @@
 - [ ] Manually test the complete flow with a real backend, valid user JWT, available credits, and configured AI/email services.
 
 ## Phase 3: User profile and account settings
-- [ ] Review the real profile update and password-change endpoints.
-- [ ] Build the user profile screen.
-- [ ] Add password change and account settings flows.
+- [x] Review the real profile GET and update endpoints.
+- [x] Build a USER-only profile screen using the authenticated API client.
+- [x] Edit the backend-supported full name, username, and address fields.
+- [ ] Manually test profile loading and saving with a real USER account.
+- [ ] Add password change and other account settings flows.
 
 ## Phase 4: Credits, pricing, and payments
 - [x] Inspect backend credit, pricing, payment, and Razorpay webhook paths.
@@ -32,13 +34,17 @@
 - [ ] Implement paid checkout only after raw-body webhook signature verification, idempotent payment crediting, and `RAZORPAY_WEBHOOK_SECRET` configuration are in place.
 
 ## Phase 5: Admin functionality
-- [ ] Inspect admin routes and role requirements.
-- [ ] Build admin dashboard screens only if the backend exposes them.
-- [ ] Restrict admin pages behind verified JWT role checks.
+- [x] Inspect admin routes and role requirements.
+- [x] Build an admin landing page and user list/detail/status screens using verified APIs.
+- [x] Build questionnaire list/create/update/delete UI while respecting default-question restrictions.
+- [x] Add read-only suspension request and API audit-log views where endpoints are available.
+- [x] Restrict all admin pages through an ADMIN-only route guard; backend JWT/role guards remain authoritative.
+- [ ] Manually test admin pages and mutations with a real ADMIN account.
 
 ## Status notes
 - Authentication screens remain in place; a development-only OTP bypass is available only when `VITE_DEV_OTP_BYPASS=true` and Vite is running in development mode. It does not verify the account or issue a token.
 - Phase 2 dashboard, list, dynamic questionnaire, generation, and detail UI are implemented. The frontend TypeScript check and production build pass. Authenticated live API behavior remains untested because the backend was not listening and no real USER session was available.
+- The profile page fetches `GET /users` and edits `full_name`, `username`, and `address` with `PUT /users`. Email is read-only because the verified update DTO does not support email changes. The frontend build passes; live GET/PUT behavior still needs testing with a real USER session.
 - The backend generation response does not include a saved itinerary ID. The frontend now snapshots existing IDs and matches a newly appearing saved record by destination, country, and generated title when available; it does not blindly open the first list item.
 - The questionnaire now has explicit empty and retry states. Backend validation error arrays are joined into readable frontend messages.
 - Source-verified backend configuration names are `GEMINI_API_KEY`, `SENDGRID_API_KEY`, and `SENDGRID_FROM_EMAIL`; secret values were not inspected.
@@ -46,6 +52,8 @@
 - Free initial itinerary credits are granted once at local or first-time Google USER account creation. OTP verification does not grant itinerary credits. Migration `AddFreeItineraryCreditGrantFlag1794086400000` marks existing users as processed without changing balances; apply it before deploying.
 - The free-credit service tests pass. Real signup, Google signup, OTP, migration, itinerary deduction, and existing database balance behavior still require manual testing against a database after applying the migration.
 - The backend exposes active per-credit prices and Razorpay order/webhook endpoints, but payment is not safe to integrate yet: the webhook secret is absent, signature verification does not use raw request bytes, and successful webhook processing is not idempotent. No fake payment or checkout-success UI was added.
+- Phase 5 admin screens use only the verified admin APIs. Suspension requests are read-only because the backend has no decision endpoint; user reactivation is performed only through the supported user-status operation. Questionnaire type creation/type changes are limited by the backend DTO's field-type length validator, which rejects `text` and `date` values.
+- The admin frontend routes are role-protected, but no live API requests or mutations have been tested with a real ADMIN account.
 - The inspected backend has no verified itinerary edit route, so itinerary editing was not added.
 - Google login is currently blocked until the backend receives valid Google OAuth credentials.
-- Phase 3 profile, Phase 4 credit/payment, and Phase 5 admin features remain pending.
+- Phase 3 password/account-settings work and live profile testing remain pending. Phase 4 paid checkout and live payment verification remain pending. Phase 5 UI is implemented; real ADMIN-session testing remains pending.

@@ -123,6 +123,7 @@ export function DashboardPage() {
         </Link>
         <nav className="app-nav" aria-label="Main navigation">
           <Link className="nav-link active" to="/dashboard">My trips</Link>
+          <Link className="nav-link" to="/profile">Profile</Link>
           <button type="button" className="nav-link" onClick={logout}>Log out</button>
         </nav>
       </header>

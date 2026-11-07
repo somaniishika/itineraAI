@@ -8,6 +8,30 @@ export type UserProfile = {
   role?: string;
 };
 
+export type ProfileDetails = {
+  id: number;
+  full_name: string;
+  username: string | null;
+  email: string;
+  address: string | null;
+  role: string;
+  email_verified: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UpdateProfileRequest = {
+  full_name: string;
+  username: string;
+  address: string;
+};
+
+export type UpdateProfileResponse = {
+  success: boolean;
+  message: string;
+  data: Pick<ProfileDetails, 'id' | 'full_name' | 'username' | 'address'>;
+};
+
 export type LoginRequest = {
   emailOrUsername: string;
   password: string;
