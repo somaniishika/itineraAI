@@ -8,11 +8,12 @@ This file documents only the backend information that was inspected and verified
   - full_name: string
   - email: string
   - password: string
-  - username: string (optional)
+  - username: string (the service requires it despite the DTO marking it optional)
   - address: string (optional)
 - Authentication: none.
 - Response: 200 with a success flag and a message like "Signup successful! Please verify your email, OTP sent to user email".
 - Validation: email must be valid, password is validated on the backend, and duplicate email/username values are rejected.
+- The service also requires a password even though the DTO marks that property optional.
 - Important behavior: the backend sends a verification OTP immediately after user creation.
 - Newly created local USER accounts receive 3 free `ITINERARY` credits at account creation. The grant is protected by a persisted one-time flag; OTP verification does not add itinerary credits. ADMIN accounts do not receive this grant.
 - The migration `AddFreeItineraryCreditGrantFlag1794086400000` must be applied before deploying this backend version. It marks pre-existing accounts as already processed and does not change any existing credit balances.
@@ -84,14 +85,21 @@ This file documents only the backend information that was inspected and verified
 - The USER dashboard also displays the live ITINERARY balance; a missing balance entry is displayed as zero.
 
 ## GET /feature-prices?type=ITINERARY
-- Purpose: return the active backend price for one itinerary credit.
+- Purpose: return the active backend price for one feature, or all active prices when `type` is omitted.
 - Authentication: JWT bearer token; any authenticated role is accepted by the current controller.
-- Response: `{ success, message, data: { featureType, priceAmount, currency } }`.
+- Response with a type: `{ success, message, data: { featureType, priceAmount, currency } }`. Without a type, `data` is an array of these records.
 - This is a per-credit price, not a predefined credit package. The dashboard displays it as informational pricing only.
 
+## PUT /feature-prices?featureType=ITINERARY (ADMIN)
+- Purpose: set or update one active feature price.
+- Authentication: JWT bearer token; `ADMIN` role required.
+- Request body: `{ priceAmount: number, currency?: string }`; `featureType` is supplied in the query.
+- Response: `{ success: true, message }`.
+
 ## Payment APIs (not ready for frontend checkout)
+- `GET /payments` is ADMIN/JWT-protected. Query parameters are `page`, `limit` (maximum 100), optional `status` (`PENDING`, `SUCCESS`, `FAILED`), and optional `search` by username/email. Response is `{ success, message, data: { data: Payment[], pagination } }`.
 - `POST /initiate` is USER/JWT-protected and accepts `{ featureCredits: [{ feature, credits }] }`. It creates a Razorpay order and returns `{ success, orderId, amount, razorpayKey }`.
-- `POST /webhook` is intended to award credits after a Razorpay captured-payment event with a valid signature.
+- `POST /webhook` is unauthenticated by JWT and expects `x-razorpay-signature` plus the Razorpay event body. It is intended to award credits after a captured-payment event with a valid signature.
 - Payment integration is intentionally not exposed in the frontend yet. The backend currently verifies a re-serialized request body rather than Razorpay's raw webhook bytes, has no idempotency guard before crediting a successful payment, and `RAZORPAY_WEBHOOK_SECRET` is not present in the inspected `backend/.env` key names. A retried captured webhook can therefore add credits more than once, and signature verification cannot be configured from the current environment.
 - The separate `/razorpay/verify-signature` test route accepts a secret in the request body and is not a production payment confirmation flow. Do not use it to grant credits.
 - The checkout flow, webhook signature verification, idempotent credit processing, and end-to-end Razorpay confirmation remain incomplete and untested. No frontend or test code simulates payment success.
@@ -116,6 +124,12 @@ This file documents only the backend information that was inspected and verified
 - Verified `content` fields include `itinerary_title`, `user_travel_location`, `country_name`, and `days`. Each day may contain `day`, `day_title`, `tags`, and `activities`; activities may contain `time`, `title`, `description`, `duration`, and `cost`.
 - The frontend renders available values and omits optional values that are absent.
 
+## Other itinerary feature routes
+- `POST /itinerary/feature/:id` requires a USER JWT and accepts `{ type, inputs }`. Supported `type` values are `BUDGET_PLAN`, `CUSTOM_ITINERARY`, and `PACKING_LIST`. Inputs vary by feature; packing list currently allows at most 8 people.
+- `GET /itinerary/feature/:itineraryId?type=BUDGET_PLAN|PACKING_LIST&page=&limit=` requires a USER JWT and returns feature data for that itinerary.
+- `GET /itinerary/:itineraryId/features/:featureId` requires a USER JWT and returns `{ success, message, data }` for one stored feature.
+- These add-on feature screens are not implemented in the frontend.
+
 ## GET /auth/google
 - Purpose: start Google OAuth login.
 - Authentication: none.
@@ -135,12 +149,70 @@ This file documents only the backend information that was inspected and verified
 - Response shape: `{ success, message, data: { id, full_name, username, address } }`.
 - Email changes are not supported by this endpoint and are read-only in the frontend profile page. Password changes use a separate endpoint and are not part of this profile page.
 
+## Other user account routes
+- `PUT /users/change-password` requires a USER JWT and `{ currentPassword, newPassword }`, both at least 6 characters. It returns a success message. No password-change UI is implemented.
+- `DELETE /users` requires a USER JWT and `{ password }` (minimum 6 characters) to soft-delete the account. No account-deletion UI is implemented.
+
+## POST /auth/review-request
+- Purpose: submit a review request for a suspended account.
+- Authentication: none.
+- Request body: `{ email, message }`.
+- Response: `{ success: true, message }`. The service requires that the account is suspended and has not already submitted a request. No frontend form is implemented.
+
+## OTP email-change routes
+- `POST /otp/email-change` requires a USER JWT and `{ email, purpose: "EMAIL_CHANGE" }`; the email is the proposed new address. Response is `{ message, data: { otpSent: true } }`.
+- `POST /otp/_verify-auth` requires a USER JWT and `{ newEmail, otp }`; response is `{ success, message }` on success.
+- These routes support changing the stored email, unlike `PUT /users`; the frontend currently keeps email read-only and does not implement this flow.
+
+## FAQ routes
+- `GET /faqs` requires a valid JWT but no specific role. Response: `{ success, message, data: FAQ[] }`, where FAQ items include `id`, `question`, `answer`, `category`, and `created_at`.
+- `POST /faqs` requires an ADMIN JWT and accepts `{ question, answer, category }` (question/answer 10-500/10-2000 characters; category 5-25). A matching normalized question may update its answer/category rather than create a duplicate.
+- `DELETE /faqs/:id` requires an ADMIN JWT and returns `{ success, message }`.
+- Neither user FAQ browsing nor admin FAQ editing is implemented in the frontend.
+
+## Emergency contacts
+- `POST /emergency-details` requires a USER JWT and `{ location: string }`.
+- Successful response: `{ success, message, data: { location, emergency_contacts, generated_at } }`; each contact has `name`, `contact`, `type`, and optional `address`/`additional_info`.
+- The service checks that the user has a positive `EMERGENCY_CONTACT` balance before serving either new or cached contacts. Newly generated contacts are saved and decrement one credit; a cache hit does not decrement. Results are emailed, and a daily cron resets this balance to 10 for all feature-balance rows.
+- Limitation: the service catches all errors, including the no-credit case, and converts them to a generic internal-server-error response. There is no separate list/detail endpoint. No frontend screen is implemented.
+
+## Feedback routes
+- `POST /feedback` requires a USER JWT and accepts `{ rating: 1..5, message: string, images?: [{ url, alt? }] }`; up to 3 image entries are allowed. Response: `{ success, message, data: Feedback }`.
+- Submission is limited by the per-user monthly feedback allowance (5); the first-of-month cron resets stored limits. Image entries are URLs, so `POST /image` can supply uploaded images.
+- `GET /feedback` requires an ADMIN JWT and accepts `page`, `limit`, and optional `rating` (1..5). Response: `{ success, message, data: Feedback[], meta: { total, page, limit, totalPages } }`.
+- Neither user feedback submission nor admin feedback review is implemented in the frontend.
+
+## Image upload
+- `POST /image` requires a valid JWT (the controller does not restrict to a specific role).
+- Content type is `multipart/form-data` with `file` and `purpose` fields. Response is `{ url, publicId }` from Cloudinary.
+- No image delete endpoint is exposed by this controller. The frontend does not currently implement upload; feedback accepts already-uploaded URLs.
+
+## Trip length guide
+- `POST /trip-length-guide` requires a USER JWT and `{ location }` (2-100 characters). It checks `TRIP_GUIDE` credits, generates and stores a guide, decrements one credit, emails the user, and returns `{ success, message, data: { guide_id, data: generatedGuide } }`.
+- `GET /trip-length-guide?page=&limit=` requires a USER JWT and returns `{ success, message, data: { data: Guide[], meta: { page, limit, total, totalPages } } }`.
+- `GET /trip-length-guide/:id` requires a USER JWT and enforces guide ownership; response is `{ success, message, data: Guide }`.
+- No trip-guide UI is implemented.
+
+## Analytics (ADMIN only)
+All analytics endpoints require a JWT bearer token and `ADMIN` role.
+- `GET /analytics/feature` returns `{ success, message, data: [{ feature, usageCount }] }`.
+- `GET /analytics/locations` returns `{ success, message, data: { totalCountries, totalItineraries, data: [{ country, count, percentage, rank }] } }`.
+- `GET /analytics/payments?type=monthly|yearly&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` returns revenue grouped into monthly/yearly `totalRevenue` series. `type` and dates are optional; date ranges are validated (monthly ranges at least 28 days, yearly at least 365 days; no future dates and start must precede end).
+- `GET /analytics/dashboard?type=users|feedbacks|revenue&periodType=monthly|yearly&startDate=&endDate=` returns `{ success, message, data }` whose shape varies by type and period. The type DTO is optional in code, but an omitted type yields no selected metric.
+- Analytics screens are not implemented in the frontend.
+
+## Provider and root routes
+- `GET /` is an unauthenticated welcome string, not a health/readiness contract.
+- `POST /ai/generate` accepts `{ user_id, api_type, prompt }` and returns the raw AI provider response. It has no auth guard and is documented as testing-only; it is not a frontend API.
+- `POST /razorpay/create-order` accepts `{ amount }` and returns `{ message, order }` without creating the application's payment/credit records; `POST /razorpay/verify-signature` accepts `{ body, signature, secret }` and returns `{ isValid }`. Both routes have no auth guard and are testing helpers, not a customer payment flow.
+- Cloudinary, SendGrid, and Gemini are service integrations called by other modules and expose no additional frontend routes. Cron jobs are background-only: OTP cleanup every 3 hours, unused image cleanup every 3 hours (images older than 60 minutes), monthly feedback-limit reset, and daily emergency-credit reset.
+
 ## Admin APIs
 All routes below require a JWT bearer token and the `ADMIN` role via `JwtAuthGuard` and `RolesGuard`.
 
 ### GET /admin/users
 - Purpose: return a paginated user list.
-- Query parameters: `page`, `limit`, optional `name`, `email`, `username`, and `is_active` (`true` filters active/not-suspended users; `false` filters suspended users).
+- Query parameters: `page`, `limit`, optional `name`, `email`, `username`, and `is_active` (`true` filters `is_suspended = false`; `false` filters `is_suspended = true`). This filter checks suspension only and does not exclude deleted accounts.
 - Response shape: `{ success, message, data: AdminUser[], meta: { total, page, limit, totalPages } }`. The service removes `password_hash` from list entries.
 
 ### GET /admin/users/:id
@@ -193,4 +265,7 @@ All routes below require a JWT bearer token and the `ADMIN` role via `JwtAuthGua
 ## Backend provider configuration
 - Gemini reads `GEMINI_API_KEY` from the backend environment.
 - SendGrid reads `SENDGRID_API_KEY` and `SENDGRID_FROM_EMAIL` from the backend environment.
+- Cloudinary reads `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, and `CLOUDINARY_IMAGE_FOLDER`.
+- Unsplash reads `UNSPLASH_ACCESS_KEY` when the itinerary service requests an image.
+- Razorpay order creation reads `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. The webhook handler also reads `RAZORPAY_WEBHOOK_SECRET`, but this key was absent from the inspected backend environment key names.
 - Keep these credentials in `backend/.env`; do not add them to frontend environment variables.

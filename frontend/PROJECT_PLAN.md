@@ -18,6 +18,7 @@
 - [x] Build a readable day-by-day itinerary detail view from the verified detail response.
 - [x] Add an explicit empty questionnaire state and retry action for questionnaire request failures.
 - [x] Identify the newly generated saved itinerary by comparing pre- and post-generation list IDs before opening its detail page.
+- [ ] Build USER screens for itinerary add-on features (`BUDGET_PLAN`, `CUSTOM_ITINERARY`, `PACKING_LIST`) using the verified feature routes.
 - [ ] Manually test the complete flow with a real backend, valid user JWT, available credits, and configured AI/email services.
 
 ## Phase 3: User profile and account settings
@@ -39,7 +40,32 @@
 - [x] Build questionnaire list/create/update/delete UI while respecting default-question restrictions.
 - [x] Add read-only suspension request and API audit-log views where endpoints are available.
 - [x] Restrict all admin pages through an ADMIN-only route guard; backend JWT/role guards remain authoritative.
+- [ ] Build admin FAQ create/delete, feedback review, analytics, feature-pricing, and payment-list screens.
 - [ ] Manually test admin pages and mutations with a real ADMIN account.
+
+## Module-wise Frontend Coverage
+- [x] `auth`: signup/login and OTP verification/password reset. Google OAuth credentials/callback still require live verification; suspended-account review request UI is not implemented.
+- [x] `users`: profile GET/PUT page. Password change, account deletion, and email-change OTP flows remain pending.
+- [x] `itinerary`: standard generation questionnaire, list, and detail. Budget-plan, custom-itinerary, and packing-list add-on screens remain pending.
+- [x] `feature-management`: USER credit balance and active itinerary per-credit price display. Admin price editing and purchase checkout are not implemented.
+- [ ] `emergency`: no user screen yet; endpoint is credit-gated and returns generated/cached emergency contact data.
+- [ ] `faq`: no USER FAQ browser or ADMIN FAQ maintenance screen yet.
+- [ ] `feedback`: no USER submission or ADMIN review screen yet.
+- [ ] `image`: no frontend uploader; can supply image URLs for feedback, which has not been implemented.
+- [x] `admin`: admin landing, user management/status, questionnaire maintenance, suspension-request list, and audit-log list. FAQ, feedback, analytics, and payments admin views remain pending.
+- [ ] `analytics`: ADMIN-only analytics endpoints are available; no charts/summary screens yet.
+- [ ] `payment`: no checkout UI. Order initiation/webhook backend is not ready for frontend use pending webhook verification/idempotency/configuration fixes.
+- [ ] `trip-guide`: USER credit-gated generate/list/detail endpoints exist; no frontend screen yet.
+- [x] `provider`: Gemini, Cloudinary, SendGrid, and Razorpay services are used by other modules; no standalone provider UI is needed. Direct AI/Razorpay testing routes are not product flows.
+- [x] `cron`: background cleanup/reset jobs only; no frontend screen is needed.
+
+## Recommended Implementation Order
+1. Add FAQ browsing, then image upload and feedback submission/review (feedback images depend on uploads).
+2. Add trip-guide and emergency-contact user workflows with live credit/error states.
+3. Add itinerary add-on feature screens.
+4. Add admin FAQ, feedback, analytics, and payment-history/price management views.
+5. Add password, account deletion, and email-change settings.
+6. Revisit paid checkout only after webhook verification is based on raw request bytes, credit grants are idempotent, and `RAZORPAY_WEBHOOK_SECRET` is configured.
 
 ## Status notes
 - Authentication screens remain in place; a development-only OTP bypass is available only when `VITE_DEV_OTP_BYPASS=true` and Vite is running in development mode. It does not verify the account or issue a token.
